@@ -1,0 +1,8 @@
+const encoder=new TextEncoder();
+export async function digest(value:string){return [...new Uint8Array(await crypto.subtle.digest("SHA-256",encoder.encode(value)))].map(x=>x.toString(16).padStart(2,"0")).join("");}
+async function key(secret:string){return crypto.subtle.importKey("raw",encoder.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign","verify"])}
+export async function signed(value:string,secret:string){return [...new Uint8Array(await crypto.subtle.sign("HMAC",await key(secret),encoder.encode(value)))].map(x=>x.toString(16).padStart(2,"0")).join("");}
+export async function challenge(secret:string,now=Date.now()){const payload=now+"."+crypto.randomUUID();return payload+"."+await signed(payload,secret)}
+export async function validChallenge(token:unknown,secret:string,now=Date.now()){if(typeof token!=="string"||token.length>200)return false;const [stamp,nonce,signature,...extra]=token.split(".");const age=now-Number(stamp);if(extra.length||!nonce||!Number.isFinite(age)||age<2000||age>3600000||!/^[a-f0-9]{64}$/.test(signature||""))return false;const bytes=Uint8Array.from(signature.match(/../g)!,x=>parseInt(x,16));return crypto.subtle.verify("HMAC",await key(secret),bytes,encoder.encode(stamp+"."+nonce));}
+export async function guestOwner(token:unknown){return typeof token==="string"&&/^[a-f0-9]{64}$/.test(token)?"guest:"+await digest(token):null;}
+export const RATE_SQL='INSERT INTO write_limits(user_id,window,count) VALUES (?, ?, 1) ON CONFLICT(user_id) DO UPDATE SET count=CASE WHEN window < ? THEN 1 ELSE count+1 END, window=CASE WHEN window < ? THEN excluded.window ELSE window END WHERE window < ? OR count < ? RETURNING count';
