@@ -1,3 +1,6 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-export const reports = sqliteTable("reports", { id:text("id").primaryKey(), title:text("title").notNull(), body:text("body").notNull(), location:text("location").notNull(), category:text("category").notNull(), author:text("author").notNull(), status:text("status").notNull(), created:integer("created").notNull() });
-export const comments = sqliteTable("comments", {id:text("id").primaryKey(), reportId:text("report_id").notNull().references(()=>reports.id), body:text("body").notNull(), author:text("author").notNull(), created:integer("created").notNull()});
+export const reports = sqliteTable("reports", { id:text("id").primaryKey(), title:text("title").notNull(), body:text("body").notNull(), location:text("location").notNull(), category:text("category").notNull(), author:text("author").notNull(), status:text("status").notNull(), ownerId:text("owner_id"), hidden:integer("hidden").notNull().default(0), created:integer("created").notNull() });
+export const comments = sqliteTable("comments", {id:text("id").primaryKey(), reportId:text("report_id").notNull().references(()=>reports.id), body:text("body").notNull(), author:text("author").notNull(), ownerId:text("owner_id"), hidden:integer("hidden").notNull().default(0), created:integer("created").notNull()});
+
+export const flags = sqliteTable("flags",{id:text("id").primaryKey(),targetId:text("target_id").notNull(),kind:text("kind").notNull(),reason:text("reason").notNull(),userId:text("user_id").notNull(),created:integer("created").notNull()});
+export const writeLimits=sqliteTable("write_limits",{userId:text("user_id").primaryKey(),window:integer("window").notNull(),count:integer("count").notNull()});
