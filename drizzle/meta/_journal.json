@@ -15,6 +15,13 @@
       "when": 1793645304255,
       "tag": "0001_heavy_tony_stark",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794855884070,
+      "tag": "0002_large_electro",
+      "breakpoints": true
     }
   ]
 }

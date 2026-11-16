@@ -1,0 +1,1 @@
+ALTER TABLE `reports` ADD `image_key` text;
