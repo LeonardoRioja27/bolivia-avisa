@@ -1,6 +1,9 @@
 "use client";
 
-/** Capa oscura + ventana. Se cierra con la ×, o al pulsar fuera de la ventana. */
+/**
+ * Capa oscura + ventana. Solo se cierra con la ×: pulsar fuera no la cierra,
+ * para no perder lo que se está escribiendo.
+ */
 export default function Modal({
   label,
   notice,
@@ -13,12 +16,7 @@ export default function Modal({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="overlay"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="overlay">
       <section className="modal" role="dialog" aria-modal="true" aria-label={label}>
         <button className="close" aria-label="Cerrar" onClick={onClose}>
           ×
