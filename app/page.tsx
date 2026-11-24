@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CreateReportForm from "@/components/home/create-report-form";
 import Hero from "@/components/home/hero";
 import HowItWorks from "@/components/home/how-it-works";
@@ -19,6 +19,7 @@ import {
   type Report,
   type SubmitAction,
 } from "@/components/home/shared";
+import { powPayload, solvePow } from "@/lib/pow";
 
 type ApiResponse = {
   error: string;
@@ -32,6 +33,8 @@ type ApiResponse = {
 
 /** Un challenge dura 1 h en el servidor; lo renovamos a los 30 min. */
 const CHALLENGE_REUSE_MS = 1_800_000;
+/** El servidor rechaza challenges con menos de 2 s de antigüedad. */
+const CHALLENGE_MIN_AGE_MS = 2_200;
 const REFRESH_MS = 30_000;
 
 export default function Home() {
@@ -39,7 +42,8 @@ export default function Home() {
   const [reports, setReports] = useState<Report[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [flags, setFlags] = useState<Flag[]>([]);
-  const [challenge, setChallenge] = useState("");
+  // Cada challenge vale para un solo envío; se guarda con la hora en que llegó.
+  const challenge = useRef({ token: "", receivedAt: 0 });
   const [signedIn, setSignedIn] = useState(false);
   const [moderator, setModerator] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -62,9 +66,9 @@ export default function Home() {
       const r = await fetch("/api/reports");
       const x = (await r.json()) as ApiResponse;
       if (!r.ok) throw Error(x.error);
-      setChallenge((previous) =>
-        previous && Date.now() - Number(previous.split(".")[0]) < CHALLENGE_REUSE_MS ? previous : x.challenge,
-      );
+      if (!challenge.current.token || Date.now() - challenge.current.receivedAt > CHALLENGE_REUSE_MS) {
+        challenge.current = { token: x.challenge, receivedAt: Date.now() };
+      }
       setSignedIn(x.signedIn);
       setModerator(x.moderator);
       setFlags(x.flags);
@@ -112,20 +116,38 @@ export default function Home() {
     setSelected(null);
   }
 
+  /**
+   * Envía una acción a la API con la prueba de trabajo antispam: espera a que
+   * el challenge tenga 2 s, calcula el nonce sobre el contenido y gasta el
+   * challenge (después se pide uno nuevo).
+   */
+  async function post(data: Record<string, unknown>) {
+    const { token, receivedAt } = challenge.current;
+    if (!token) throw Error("No se pudo preparar el envío. Recarga la página.");
+    const wait = CHALLENGE_MIN_AGE_MS - (Date.now() - receivedAt);
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    const pow = await solvePow(token, powPayload(data));
+    challenge.current = { token: "", receivedAt: 0 };
+    try {
+      const r = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, challenge: token, pow }),
+      });
+      const x = (await r.json()) as { error?: string };
+      if (!r.ok) throw Error(x.error);
+    } finally {
+      await load(); // trae los datos nuevos y un challenge sin usar
+    }
+  }
+
   async function moderate(action: ModerateAction, id: string, kind: string) {
     const reason = action === "flag" ? window.prompt("¿Por qué quieres denunciar este contenido?") : "";
     if (action === "flag" && !reason) return;
     if (action === "hide" && !window.confirm("¿Retirar este contenido de la web?")) return;
     try {
-      const r = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, id, kind, reason, challenge, ownerToken: readKey(id) }),
-      });
-      const x = (await r.json()) as { error?: string };
-      if (!r.ok) throw Error(x.error);
+      await post({ action, id, kind, reason, ownerToken: readKey(id) });
       setSelected(null);
-      await load();
       window.alert(action === "flag" ? "Denuncia enviada a moderación." : "Contenido retirado.");
     } catch (e) {
       window.alert((e as Error).message);
@@ -142,24 +164,16 @@ export default function Home() {
       // La autoría la recuerda la cookie del servidor; ownerToken solo sirve
       // para avisos antiguos cuya clave quedó en localStorage.
       const legacyKey = action === "status" ? readKey(selected || "") : "";
-      const r = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          action,
-          id: selected,
-          ownerToken: legacyKey || undefined,
-          challenge,
-          photo: action === "create" && publicationKind !== "Aviso" ? photo : undefined,
-        }),
+      await post({
+        ...values,
+        action,
+        id: selected,
+        ownerToken: legacyKey || undefined,
+        photo: action === "create" && publicationKind !== "Aviso" ? photo : undefined,
       });
-      const x = (await r.json()) as { error: string };
-      if (!r.ok) throw Error(x.error);
       if (action === "create") setCreate(false);
       form.reset();
       setNotice("Guardado. Gracias por aportar a la comunidad.");
-      await load();
     } catch (e) {
       setNotice((e as Error).message);
     } finally {

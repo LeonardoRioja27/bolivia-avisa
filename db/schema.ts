@@ -4,3 +4,5 @@ export const comments = sqliteTable("comments", {id:text("id").primaryKey(), rep
 
 export const flags = sqliteTable("flags",{id:text("id").primaryKey(),targetId:text("target_id").notNull(),kind:text("kind").notNull(),reason:text("reason").notNull(),userId:text("user_id").notNull(),created:integer("created").notNull()});
 export const writeLimits=sqliteTable("write_limits",{userId:text("user_id").primaryKey(),window:integer("window").notNull(),count:integer("count").notNull()});
+/** Challenges ya usados: cada uno vale para un solo envío (antispam). */
+export const usedChallenges=sqliteTable("used_challenges",{nonce:text("nonce").primaryKey(),expires:integer("expires").notNull()});
