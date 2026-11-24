@@ -3,7 +3,7 @@ import { useState } from "react";
 import ReportCard from "./report-card";
 import { categories, statuses, type Comment, type PublicationKind, type Report } from "./shared";
 
-const sections = ["Todos", "Objetos perdidos", "Objetos encontrados"];
+const sections = ["Todos", "Mis avisos", "Objetos perdidos", "Objetos encontrados"];
 
 /** «¿Qué está pasando?»: buscador, filtros y cuadrícula de avisos. */
 export default function ReportsSection({
@@ -30,7 +30,7 @@ export default function ReportsSection({
 
   const visible = reports.filter(
     (r) =>
-      (section === "Todos" || r.category === section) &&
+      (section === "Todos" || (section === "Mis avisos" ? !!r.mine : r.category === section)) &&
       (filter === "Todos" || r.status === filter) &&
       (category === "Todas" || r.category === category) &&
       (r.title + " " + r.body + " " + r.location).toLowerCase().includes(query.toLowerCase()),
@@ -117,7 +117,13 @@ export default function ReportsSection({
       ) : (
         <div className="empty">
           <span className="empty-icon">☏</span>
-          <h3>{reports.length ? "No hay avisos con estos filtros" : "Tu aviso puede ser el primero"}</h3>
+          <h3>
+            {section === "Mis avisos" && !reports.some((r) => r.mine)
+              ? "Aún no has publicado avisos desde este navegador"
+              : reports.length
+                ? "No hay avisos con estos filtros"
+                : "Tu aviso puede ser el primero"}
+          </h3>
           <p>
             {reports.length
               ? "Prueba otra búsqueda o categoría."

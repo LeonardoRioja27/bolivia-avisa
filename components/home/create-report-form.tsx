@@ -28,8 +28,8 @@ export default function CreateReportForm({
       <div className="eyebrow">TU COMUNIDAD TE ESCUCHA</div>
       <h2>{isNotice ? "Publicar un aviso" : kind}</h2>
       <p>
-        Comparte hechos y evita datos personales. Conserva este navegador: aquí se guardará la clave para gestionar tu
-        aviso.
+        Comparte hechos y evita datos personales. Este navegador recordará que el aviso es tuyo (con una cookie) para
+        que puedas actualizarlo o retirarlo.
       </p>
       <form onSubmit={onSubmit}>
         <HoneypotField />

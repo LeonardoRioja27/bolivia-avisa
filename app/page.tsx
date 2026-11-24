@@ -11,9 +11,7 @@ import SiteFooter from "@/components/home/site-footer";
 import SiteHeader from "@/components/home/site-header";
 import Stats from "@/components/home/stats";
 import {
-  newKey,
   readKey,
-  saveKey,
   type Comment,
   type Flag,
   type ModerateAction,
@@ -70,7 +68,12 @@ export default function Home() {
       setSignedIn(x.signedIn);
       setModerator(x.moderator);
       setFlags(x.flags);
-      setReports(x.reports.map((r) => ({ ...r, canManage: r.canManage || !!readKey(r.id) })));
+      setReports(
+        x.reports.map((r) => {
+          const legacy = !!readKey(r.id);
+          return { ...r, canManage: r.canManage || legacy, mine: r.mine || legacy };
+        }),
+      );
       setComments(x.comments);
       setError("");
     } catch (e) {
@@ -136,8 +139,9 @@ export default function Home() {
     setNotice("");
     try {
       const values = Object.fromEntries(new FormData(form));
-      // Publicar o comentar crea una clave nueva; cambiar el estado usa la del aviso.
-      const key = action === "create" || action === "comment" ? newKey() : readKey(selected || "");
+      // La autoría la recuerda la cookie del servidor; ownerToken solo sirve
+      // para avisos antiguos cuya clave quedó en localStorage.
+      const legacyKey = action === "status" ? readKey(selected || "") : "";
       const r = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,14 +149,13 @@ export default function Home() {
           ...values,
           action,
           id: selected,
-          ownerToken: key,
+          ownerToken: legacyKey || undefined,
           challenge,
           photo: action === "create" && publicationKind !== "Aviso" ? photo : undefined,
         }),
       });
-      const x = (await r.json()) as { error: string; id?: string };
+      const x = (await r.json()) as { error: string };
       if (!r.ok) throw Error(x.error);
-      if (x.id && key) saveKey(x.id, key);
       if (action === "create") setCreate(false);
       form.reset();
       setNotice("Guardado. Gracias por aportar a la comunidad.");

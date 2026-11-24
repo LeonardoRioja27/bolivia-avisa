@@ -53,7 +53,7 @@ export default function ReportDetail({
             <button className="text-button" disabled={!signedIn} onClick={() => onModerate("flag", c.id, "comment")}>
               Denunciar comentario
             </button>
-            {(moderator || !!readKey(c.id)) && (
+            {(moderator || c.canManage || !!readKey(c.id)) && (
               <button className="text-button" onClick={() => onModerate("hide", c.id, "comment")}>
                 Retirar comentario
               </button>
