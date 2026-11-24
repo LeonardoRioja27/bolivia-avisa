@@ -1,16 +1,221 @@
 "use client";
-import {useState,useEffect} from "react";
-import ReportPhotoPicker from "@/components/report-photo-picker";
-type Report={id:string;title:string;body:string;location:string;category:string;author:string;status:string;created:number;canManage?:boolean;imageUrl?:string|null};
-type Comment={id:string;reportId:string;author:string;body:string;created:number};
-const categories=["Transporte","Servicios","Calles y espacios","Otros","Objetos perdidos","Objetos encontrados"],statuses=["Pendiente","En seguimiento","Resuelto"];
-export default function Home(){const [section,setSection]=useState("Todos"),[publicationKind,setPublicationKind]=useState("Aviso"),[photo,setPhoto]=useState(""),[photoBusy,setPhotoBusy]=useState(false);const [challenge,setChallenge]=useState("");const [signedIn,setSignedIn]=useState(false),[moderator,setModerator]=useState(false),[flags,setFlags]=useState<{id:string;targetId:string;kind:string;reason:string}[]>([]);const [reports,setReports]=useState<Report[]>([]),[comments,setComments]=useState<Comment[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(""),[query,setQuery]=useState(""),[filter,setFilter]=useState("Todos"),[category,setCategory]=useState("Todas"),[selected,setSelected]=useState<string|null>(null),[create,setCreate]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");
-function openCreate(kind='Aviso'){setSelected(null);setPublicationKind(kind);setPhoto('');setPhotoBusy(false);setNotice('');setCreate(true)}
-function readKey(id:string){try{return localStorage.getItem('bolivia-edit:'+id)||''}catch{return ''}}
-function newKey(){const key=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem('bolivia-storage-check','ok');localStorage.removeItem('bolivia-storage-check');return key;}
-async function load(){try{const r=await fetch('/api/reports');const x=await r.json() as {error:string;reports:Report[];comments:Comment[];signedIn:boolean;moderator:boolean;challenge:string;flags:{id:string;targetId:string;kind:string;reason:string}[]};if(!r.ok)throw Error(x.error);setChallenge(previous=>previous&&Date.now()-Number(previous.split('.')[0])<1800000?previous:x.challenge);setSignedIn(x.signedIn);setModerator(x.moderator);setFlags(x.flags);setReports(x.reports.map(r=>({...r,canManage:r.canManage||!!readKey(r.id)})));setComments(x.comments);setError("")}catch(e){setError((e as Error).message)}finally{setLoading(false)}}
-useEffect(()=>{load();const timer=setInterval(load,30000);return()=>clearInterval(timer)},[]);
-async function moderate(action:string,id:string,kind:string){const reason=action==='flag'?window.prompt('¿Por qué quieres denunciar este contenido?'):'';if(action==='flag'&&!reason)return;if(action==='hide'&&!window.confirm('¿Retirar este contenido de la web?'))return;try{const r=await fetch('/api/reports',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,id,kind,reason,challenge,ownerToken:readKey(id)})});const x=await r.json() as {error?:string};if(!r.ok)throw Error(x.error);setSelected(null);await load();window.alert(action==='flag'?'Denuncia enviada a moderación.':'Contenido retirado.')}catch(e){window.alert((e as Error).message)}}
-async function submit(e:React.FormEvent<HTMLFormElement>,action:string){e.preventDefault();const form=e.currentTarget;setBusy(true);setNotice("");try{const values=Object.fromEntries(new FormData(form));const key=action==='create'||action==='comment'?newKey():readKey(selected||'');const r=await fetch('/api/reports',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...values,action,id:selected,ownerToken:key,challenge,photo:action==='create'&&publicationKind!=='Aviso'?photo:undefined})});const x=await r.json() as {error:string;id?:string};if(!r.ok)throw Error(x.error);if(x.id&&key)localStorage.setItem('bolivia-edit:'+x.id,key);if(action==='create')setCreate(false);form.reset();setNotice('Guardado. Gracias por aportar a la comunidad.');await load()}catch(e){setNotice((e as Error).message)}finally{setBusy(false)}}
-const visible=reports.filter(r=>(section==='Todos'||section==='Objetos perdidos'&&r.category===section||section==='Objetos encontrados'&&r.category===section)&&(filter==='Todos'||r.status===filter)&&(category==='Todas'||r.category===category)&&(r.title+' '+r.body+' '+r.location).toLowerCase().includes(query.toLowerCase()));const current=reports.find(r=>r.id===selected);const date=(n:number)=>new Date(n).toLocaleDateString('es-BO',{day:'numeric',month:'short'});
-return <><header><a className="brand" href="/"><span className="logo">b<span>•</span></span>bolivia<span className="light">avisa</span></a><span className="header-note">Un espacio de la comunidad</span><button onClick={()=>{openCreate()}}>＋ Publicar un aviso</button></header><main><p className="signin-note">Prueba comunitaria abierta · Participa con un alias, sin crear una cuenta. Los alias no verifican la identidad de las personas.</p><section className="hero"><div><div className="eyebrow"><span/> VECINOS QUE SE AYUDAN</div><h1>Lo que pasa aquí,<br/><em>lo resolvemos juntos.</em></h1><p>Un problema compartido es el primer paso para solucionarlo.<br className="desktop"/> Avisa, conversa y cuenta a tu comunidad cuando se resuelva.</p><button onClick={()=>{openCreate()}}>Publicar mi primer aviso <span>↗</span></button><a className="textlink" href="#avisos">Ver los avisos ↓</a></div><div className="illustration" aria-hidden="true"><div className="orbit o1"/><div className="orbit o2"/><div className="bubble small">¿Alguien tiene novedades?</div><div className="sample"><span className="sample-tag">EJEMPLO · TRANSPORTE</span><strong>Problema con el tren 33</strong><p>Compartamos lo que sabemos.</p><div className="sample-bottom"><span className="avatars">A <i>B</i> <i>C</i></span><span>Tu comunidad, conectada</span></div></div><div className="bubble resolved">✓ ¡Ya está arreglado!</div><span className="spark">✳</span></div></section><section className="stats"><div><strong>{reports.length}</strong><span>Avisos compartidos</span></div><div><strong>{reports.filter(r=>r.status!=='Resuelto').length}</strong><span>Necesitan atención</span></div><div><strong className="green">{reports.filter(r=>r.status==='Resuelto').length}</strong><span>Problemas resueltos</span></div><p>Cada actualización<br/><b>nos ayuda a todos.</b> ↗</p></section><section id="avisos"><div className="section-top"><div><div className="eyebrow">EL PULSO DE LA COMUNIDAD</div><h2>¿Qué está pasando?</h2></div><label className="search">⌕ <input aria-label="Buscar avisos" placeholder="Buscar un objeto, problema o lugar…" value={query} onChange={e=>setQuery(e.target.value)}/></label></div><div className="object-section"><div><h3>¿Perdiste o encontraste algo?</h3><p>Comparte una foto y ayuda a que vuelva a su dueño.</p></div><button onClick={()=>openCreate('He perdido algo')}>He perdido algo</button><button onClick={()=>openCreate('He encontrado algo')}>He encontrado algo</button></div><div className="tabs object-tabs" role="group" aria-label="Tipo de avisos">{['Todos','Objetos perdidos','Objetos encontrados'].map(s=><button key={s} aria-pressed={section===s} className={section===s?'active':''} onClick={()=>{setSection(s);setCategory('Todas')}}>{s}</button>)}</div><div className="toolbar"><div className="tabs">{['Todos',...statuses].map(s=><button key={s} className={filter===s?'active':''} onClick={()=>setFilter(s)}>{s}</button>)}</div><select aria-label="Filtrar por categoría" value={category} onChange={e=>setCategory(e.target.value)}><option>Todas</option>{categories.map(s=><option key={s}>{s}</option>)}</select></div>{error?<div className="empty" role="alert"><h3>No pudimos cargar los avisos</h3><p>{error}</p><button onClick={load}>Reintentar</button></div>:loading?<div className="empty">Cargando los avisos…</div>:visible.length?<div className="grid">{visible.map(r=><button className="card" key={r.id} onClick={()=>{setSelected(r.id);setNotice('')}}><div className="cardtop"><span className="category">{r.category}</span><span className={'badge s'+statuses.indexOf(r.status)}>{r.status}</span></div><h3>{r.title}</h3>{r.imageUrl&&<img className="object-photo" src={r.imageUrl} alt={'Foto del objeto: '+r.title} loading="lazy"/>}<p>{r.body}</p><div className="location">⌖ {r.location}</div><div className="cardfoot"><span>{r.author} · {date(r.created)}</span><span>♧ {comments.filter(c=>c.reportId===r.id).length} comentarios →</span></div></button>)}</div>:<div className="empty"><span className="empty-icon">☏</span><h3>{reports.length?'No hay avisos con estos filtros':'Tu aviso puede ser el primero'}</h3><p>{reports.length?'Prueba otra búsqueda o categoría.':'¿Has visto un problema? Compártelo para que la comunidad pueda ayudar.'}</p><button onClick={()=>{setCreate(true);setNotice('')}}>＋ Publicar un aviso</button></div>}</section>{moderator&&<section className="moderation"><h2>Moderación</h2><p>Revisa las denuncias antes de retirar contenido. Los avisos antiguos sin propietario solo los gestiona moderación.</p>{flags.length?flags.map(f=><article key={f.id}><p>{f.reason}</p><small>{f.kind} · {f.targetId}</small><button onClick={()=>moderate('hide',f.targetId,f.kind)}>Retirar contenido denunciado</button></article>):<p>No hay denuncias.</p>}</section>}<section className="how"><div className="eyebrow">ASÍ DE SENCILLO</div><h2>De «hay un problema» a «ya se resolvió».</h2><div className="steps"><div><span>01</span><h3>Cuenta qué pasa</h3><p>Describe el problema y dónde ocurre.</p></div><div><span>02</span><h3>Sumamos información</h3><p>Otras personas comentan y aportan novedades.</p></div><div><span>03</span><h3>Cerramos el círculo</h3><p>Actualiza el estado y explica qué ha cambiado.</p></div></div></section></main><footer><span>bolivia<b>avisa</b> · Proyecto comunitario</span><span>Avisos ciudadanos. No es un canal oficial de emergencias. · <a href="/normas">Normas y privacidad</a> · <a href="mailto:marc_tan500@hotmail.com">Contacto</a> · <a href="/signin-with-chatgpt?return_to=%2F" target="_top">Moderación</a></span></footer>{(create||current)&&<div className="overlay" onClick={e=>{if(e.target===e.currentTarget){setCreate(false);setSelected(null)}}}><section className="modal" role="dialog" aria-modal="true" aria-label={create?'Publicar un aviso':current?.title}><button className="close" aria-label="Cerrar" onClick={()=>{setCreate(false);setSelected(null)}}>×</button>{create?<><div className="eyebrow">TU COMUNIDAD TE ESCUCHA</div><h2>{publicationKind==='Aviso'?'Publicar un aviso':publicationKind}</h2><p>Comparte hechos y evita datos personales. Conserva este navegador: aquí se guardará la clave para gestionar tu aviso.</p><form onSubmit={e=>submit(e,'create')}><label className="honeypot" aria-hidden="true">Deja este campo vacío<input name="website" tabIndex={-1} autoComplete="off"/></label><label>Tu nombre o alias<input name="author" required maxLength={50} placeholder="Cómo quieres aparecer"/></label><label>Tipo de publicación<select aria-label="Tipo de publicación" value={publicationKind} onChange={e=>{setPublicationKind(e.target.value);setPhoto('');setPhotoBusy(false)}}><option>Aviso</option><option>He perdido algo</option><option>He encontrado algo</option></select></label><label>{publicationKind==='Aviso'?'¿Qué ocurre?':'¿Qué objeto es?'}<input name="title" required maxLength={120} placeholder={publicationKind==='Aviso'?'Ej.: Hay un problema con el tren 33':'Ej.: Mochila azul perdida en el centro'}/></label><div className="formrow"><label>Lugar<input name="location" required maxLength={100} placeholder="Ciudad, barrio o parada"/></label>{publicationKind==='Aviso'?<label>Categoría<select name="category">{categories.slice(0,4).map(s=><option key={s}>{s}</option>)}</select></label>:<input type="hidden" name="category" value={publicationKind==='He perdido algo'?'Objetos perdidos':'Objetos encontrados'}/>}</div><label>Descripción<textarea name="body" required maxLength={2500} placeholder={publicationKind==='Aviso'?'Qué has observado y desde cuándo…':'Describe el objeto, cuándo y en qué zona se perdió o apareció.'}/></label>{publicationKind!=='Aviso'&&<ReportPhotoPicker value={photo} onChange={setPhoto} onBusy={setPhotoBusy}/>}<label className="consent"><input type="checkbox" name="accepted" value="yes" required/> He leído las <a href="/normas" target="_blank">normas y privacidad</a>.</label><button disabled={busy||photoBusy||!signedIn}>{busy?'Publicando…':'Publicar aviso'}</button></form></>:current&&<><span className={'badge s'+statuses.indexOf(current.status)}>{current.status}</span><h2>{current.title}</h2><p className="meta">{current.location} · {current.category} · {current.author} · {date(current.created)}</p><p className="report-body">{current.body}</p>{current.imageUrl&&<a href={current.imageUrl} target="_blank" rel="noreferrer" aria-label="Abrir foto del objeto en tamaño completo"><img className="object-photo detail-photo" src={current.imageUrl} alt={'Foto del objeto: '+current.title}/></a>}<h3>Conversación</h3><div className="conversation">{comments.filter(c=>c.reportId===current.id).map(c=><article key={c.id}><b>{c.author}</b><small>{date(c.created)}</small><p>{c.body}</p><button className="text-button" disabled={!signedIn} onClick={()=>moderate('flag',c.id,'comment')}>Denunciar comentario</button>{(moderator||!!readKey(c.id))&&<button className="text-button" onClick={()=>moderate('hide',c.id,'comment')}>Retirar comentario</button>}</article>)}{!comments.some(c=>c.reportId===current.id)&&<p>Aún no hay comentarios. ¿Tienes alguna novedad?</p>}</div><form onSubmit={e=>submit(e,'comment')}><label className="honeypot" aria-hidden="true">Deja este campo vacío<input name="website" tabIndex={-1} autoComplete="off"/></label><label>Tu nombre o alias<input name="author" required maxLength={50}/></label><label>Añadir un comentario<textarea name="body" required maxLength={2500} placeholder="Comparte lo que sabes…"/></label><label className="consent"><input type="checkbox" name="accepted" value="yes" required/> He leído las <a href="/normas" target="_blank">normas y privacidad</a>.</label><button disabled={busy||photoBusy||!signedIn}>Enviar comentario</button></form>{current.canManage&&<details><summary>Actualizar el estado</summary><form onSubmit={e=>submit(e,'status')}><label className="honeypot" aria-hidden="true">Deja este campo vacío<input name="website" tabIndex={-1} autoComplete="off"/></label><label>Tu nombre o alias<input name="author" required maxLength={50}/></label><label>Nuevo estado<select name="status" defaultValue={current.status}>{statuses.map(s=><option key={s} value={s}>{s==='Resuelto'&&current.category.startsWith('Objetos ')?'Resuelto · devuelto o recuperado':s}</option>)}</select></label><label>Explica qué ha cambiado<textarea name="body" required maxLength={2500}/></label><label className="consent"><input type="checkbox" name="accepted" value="yes" required/> He leído las <a href="/normas" target="_blank">normas y privacidad</a>.</label><button disabled={busy||photoBusy||!signedIn}>Guardar actualización</button></form></details>}<div className="moderation-actions"><button onClick={()=>moderate('flag',current.id,'report')} disabled={!signedIn}>Denunciar aviso</button>{current.canManage&&<button onClick={()=>moderate('hide',current.id,'report')}>Retirar aviso</button>}</div></>}{notice&&<p className="notice" role="status">{notice}</p>}</section></div>}</>}
+import { useEffect, useState } from "react";
+import CreateReportForm from "@/components/home/create-report-form";
+import Hero from "@/components/home/hero";
+import HowItWorks from "@/components/home/how-it-works";
+import Modal from "@/components/home/modal";
+import ModerationPanel from "@/components/home/moderation-panel";
+import ReportDetail from "@/components/home/report-detail";
+import ReportsSection from "@/components/home/reports-section";
+import SiteFooter from "@/components/home/site-footer";
+import SiteHeader from "@/components/home/site-header";
+import Stats from "@/components/home/stats";
+import {
+  newKey,
+  readKey,
+  saveKey,
+  type Comment,
+  type Flag,
+  type ModerateAction,
+  type PublicationKind,
+  type Report,
+  type SubmitAction,
+} from "@/components/home/shared";
+
+type ApiResponse = {
+  error: string;
+  reports: Report[];
+  comments: Comment[];
+  signedIn: boolean;
+  moderator: boolean;
+  challenge: string;
+  flags: Flag[];
+};
+
+/** Un challenge dura 1 h en el servidor; lo renovamos a los 30 min. */
+const CHALLENGE_REUSE_MS = 1_800_000;
+const REFRESH_MS = 30_000;
+
+export default function Home() {
+  // Datos que llegan de /api/reports
+  const [reports, setReports] = useState<Report[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [flags, setFlags] = useState<Flag[]>([]);
+  const [challenge, setChallenge] = useState("");
+  const [signedIn, setSignedIn] = useState(false);
+  const [moderator, setModerator] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Estado del modal
+  const [selected, setSelected] = useState<string | null>(null);
+  const [create, setCreate] = useState(false);
+  const [publicationKind, setPublicationKind] = useState<PublicationKind>("Aviso");
+  const [photo, setPhoto] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  const current = reports.find((r) => r.id === selected);
+  const formDisabled = busy || photoBusy || !signedIn;
+
+  async function load() {
+    try {
+      const r = await fetch("/api/reports");
+      const x = (await r.json()) as ApiResponse;
+      if (!r.ok) throw Error(x.error);
+      setChallenge((previous) =>
+        previous && Date.now() - Number(previous.split(".")[0]) < CHALLENGE_REUSE_MS ? previous : x.challenge,
+      );
+      setSignedIn(x.signedIn);
+      setModerator(x.moderator);
+      setFlags(x.flags);
+      setReports(x.reports.map((r) => ({ ...r, canManage: r.canManage || !!readKey(r.id) })));
+      setComments(x.comments);
+      setError("");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+    const timer = setInterval(load, REFRESH_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  function changeKind(kind: PublicationKind) {
+    setPublicationKind(kind);
+    setPhoto("");
+    setPhotoBusy(false);
+  }
+
+  function openCreate(kind: PublicationKind = "Aviso") {
+    setSelected(null);
+    changeKind(kind);
+    setNotice("");
+    setCreate(true);
+  }
+
+  function openReport(id: string) {
+    setSelected(id);
+    setNotice("");
+  }
+
+  function closeModal() {
+    setCreate(false);
+    setSelected(null);
+  }
+
+  async function moderate(action: ModerateAction, id: string, kind: string) {
+    const reason = action === "flag" ? window.prompt("¿Por qué quieres denunciar este contenido?") : "";
+    if (action === "flag" && !reason) return;
+    if (action === "hide" && !window.confirm("¿Retirar este contenido de la web?")) return;
+    try {
+      const r = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, id, kind, reason, challenge, ownerToken: readKey(id) }),
+      });
+      const x = (await r.json()) as { error?: string };
+      if (!r.ok) throw Error(x.error);
+      setSelected(null);
+      await load();
+      window.alert(action === "flag" ? "Denuncia enviada a moderación." : "Contenido retirado.");
+    } catch (e) {
+      window.alert((e as Error).message);
+    }
+  }
+
+  async function submit(e: React.FormEvent<HTMLFormElement>, action: SubmitAction) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    setBusy(true);
+    setNotice("");
+    try {
+      const values = Object.fromEntries(new FormData(form));
+      // Publicar o comentar crea una clave nueva; cambiar el estado usa la del aviso.
+      const key = action === "create" || action === "comment" ? newKey() : readKey(selected || "");
+      const r = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...values,
+          action,
+          id: selected,
+          ownerToken: key,
+          challenge,
+          photo: action === "create" && publicationKind !== "Aviso" ? photo : undefined,
+        }),
+      });
+      const x = (await r.json()) as { error: string; id?: string };
+      if (!r.ok) throw Error(x.error);
+      if (x.id && key) saveKey(x.id, key);
+      if (action === "create") setCreate(false);
+      form.reset();
+      setNotice("Guardado. Gracias por aportar a la comunidad.");
+      await load();
+    } catch (e) {
+      setNotice((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <SiteHeader onPublish={() => openCreate()} />
+      <main>
+        <p className="signin-note">
+          Prueba comunitaria abierta · Participa con un alias, sin crear una cuenta. Los alias no verifican la identidad
+          de las personas.
+        </p>
+        <Hero onPublish={() => openCreate()} />
+        <Stats reports={reports} />
+        <ReportsSection
+          reports={reports}
+          comments={comments}
+          loading={loading}
+          error={error}
+          onRetry={load}
+          onPublish={openCreate}
+          onSelect={openReport}
+        />
+        {moderator && <ModerationPanel flags={flags} onHide={(f) => moderate("hide", f.targetId, f.kind)} />}
+        <HowItWorks />
+      </main>
+      <SiteFooter />
+
+      {(create || current) && (
+        <Modal label={create ? "Publicar un aviso" : (current?.title ?? "")} notice={notice} onClose={closeModal}>
+          {create ? (
+            <CreateReportForm
+              kind={publicationKind}
+              onKindChange={changeKind}
+              photo={photo}
+              onPhotoChange={setPhoto}
+              onPhotoBusy={setPhotoBusy}
+              disabled={formDisabled}
+              busy={busy}
+              onSubmit={(e) => submit(e, "create")}
+            />
+          ) : (
+            current && (
+              <ReportDetail
+                report={current}
+                comments={comments.filter((c) => c.reportId === current.id)}
+                signedIn={signedIn}
+                moderator={moderator}
+                disabled={formDisabled}
+                onSubmit={submit}
+                onModerate={moderate}
+              />
+            )
+          )}
+        </Modal>
+      )}
+    </>
+  );
+}
