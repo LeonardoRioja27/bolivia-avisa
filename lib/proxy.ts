@@ -12,7 +12,7 @@ export const PROXY_SECRET_HEADER = "x-avisa-proxy-secret";
 const encoder = new TextEncoder();
 
 /** Compara en tiempo constante (vía hash) para no filtrar el secreto por tiempos. */
-async function sameSecret(given: string, expected: string) {
+export async function sameSecret(given: string, expected: string) {
   const [a, b] = await Promise.all(
     [given, expected].map(async (v) => new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(v)))),
   );

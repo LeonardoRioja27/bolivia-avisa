@@ -29,6 +29,13 @@
       "when": 1795550994951,
       "tag": "0003_used_challenges",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795638016536,
+      "tag": "0004_forwarding",
+      "breakpoints": true
     }
   ]
 }

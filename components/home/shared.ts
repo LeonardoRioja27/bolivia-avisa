@@ -11,6 +11,10 @@ export type Report = {
   /** Publicado desde este navegador. */
   mine?: boolean;
   imageUrl?: string | null;
+  /** Entidad a la que se reenvía (id de lib/entities.ts). */
+  entity?: string | null;
+  forwardStatus?: string;
+  forwardedAt?: number | null;
 };
 
 export type Comment = {

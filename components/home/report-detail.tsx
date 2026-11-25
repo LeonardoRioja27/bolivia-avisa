@@ -1,5 +1,6 @@
 "use client";
 import { AuthorField, ConsentNote, HoneypotField } from "./form-fields";
+import { entityById } from "@/lib/entities";
 import {
   formatDate,
   readKey,
@@ -29,6 +30,15 @@ export default function ReportDetail({
   onModerate: (action: ModerateAction, id: string, kind: "report" | "comment") => void;
 }) {
   const statusClass = "badge s" + statuses.indexOf(report.status);
+  const entity = entityById(report.entity);
+  // A dónde va la queja: solo se muestra si hay entidad y el aviso es posterior al reenvío.
+  const forwarding =
+    entity &&
+    (report.forwardStatus === "enviado"
+      ? `Enviado a ${entity.nombre}${report.forwardedAt ? " el " + formatDate(report.forwardedAt) : ""}.`
+      : report.forwardStatus === "pendiente" || report.forwardStatus === "fallido"
+        ? `Se enviará a ${entity.nombre}.`
+        : null);
   return (
     <>
       <span className={statusClass}>{report.status}</span>
@@ -36,6 +46,7 @@ export default function ReportDetail({
       <p className="meta">
         {[report.location, report.category, report.author, formatDate(report.created)].filter(Boolean).join(" · ")}
       </p>
+      {forwarding && <p className="forwarding">↗ {forwarding}</p>}
       {report.body && report.body !== report.title && <p className="report-body">{report.body}</p>}
       {report.imageUrl && (
         <a href={report.imageUrl} target="_blank" rel="noreferrer" aria-label="Abrir foto en tamaño completo">

@@ -50,7 +50,11 @@ export default function Home() {
   const [error, setError] = useState("");
 
   // Estado del modal
-  const [selected, setSelected] = useState<string | null>(null);
+  // Enlace directo a un aviso (?aviso=<id>), por ejemplo desde el correo que recibe una entidad.
+  // El modal solo aparece cuando llegan los avisos, así que no afecta al HTML del servidor.
+  const [selected, setSelected] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("aviso"),
+  );
   const [create, setCreate] = useState(false);
   const [publicationKind, setPublicationKind] = useState<PublicationKind>("Aviso");
   const [photo, setPhoto] = useState("");
