@@ -1,5 +1,5 @@
 "use client";
-import { ConsentCheckbox, HoneypotField } from "./form-fields";
+import { ConsentNote, HoneypotField } from "./form-fields";
 import {
   formatDate,
   readKey,
@@ -73,7 +73,7 @@ export default function ReportDetail({
           Añadir un comentario
           <textarea name="body" required maxLength={2500} placeholder="Comparte lo que sabes…" />
         </label>
-        <ConsentCheckbox />
+        <ConsentNote />
         <button disabled={disabled}>Enviar comentario</button>
       </form>
 
@@ -100,7 +100,7 @@ export default function ReportDetail({
               Explica qué ha cambiado
               <textarea name="body" required maxLength={2500} />
             </label>
-            <ConsentCheckbox />
+            <ConsentNote />
             <button disabled={disabled}>Guardar actualización</button>
           </form>
         </details>

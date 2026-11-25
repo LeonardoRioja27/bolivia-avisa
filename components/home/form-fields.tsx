@@ -8,14 +8,15 @@ export function HoneypotField() {
   );
 }
 
-export function ConsentCheckbox() {
+/** Aviso (sin casilla) de que publicar implica aceptar las normas. */
+export function ConsentNote() {
   return (
-    <label className="consent">
-      <input type="checkbox" name="accepted" value="yes" required /> He leído las{" "}
+    <p className="consent">
+      Al enviar aceptas las{" "}
       <a href="/normas" target="_blank">
         normas y privacidad
       </a>
       .
-    </label>
+    </p>
   );
 }

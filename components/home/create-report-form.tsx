@@ -1,6 +1,6 @@
 "use client";
 import ReportPhotoPicker from "@/components/report-photo-picker";
-import { ConsentCheckbox, HoneypotField } from "./form-fields";
+import { ConsentNote, HoneypotField } from "./form-fields";
 import { categories, type PublicationKind } from "./shared";
 
 export default function CreateReportForm({
@@ -94,7 +94,7 @@ export default function CreateReportForm({
           />
         </label>
         {!isNotice && <ReportPhotoPicker value={photo} onChange={onPhotoChange} onBusy={onPhotoBusy} />}
-        <ConsentCheckbox />
+        <ConsentNote />
         <button disabled={disabled}>{busy ? "Publicando…" : "Publicar aviso"}</button>
       </form>
     </>
