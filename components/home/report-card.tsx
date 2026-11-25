@@ -16,7 +16,7 @@ export default function ReportCard({
         <span className={"badge s" + statuses.indexOf(r.status)}>{r.status}</span>
       </div>
       <h3>{r.title}</h3>
-      {r.imageUrl && <img className="object-photo" src={r.imageUrl} alt={"Foto del objeto: " + r.title} loading="lazy" />}
+      {r.imageUrl && <img className="object-photo" src={r.imageUrl} alt={"Foto: " + r.title} loading="lazy" />}
       <p>{r.body}</p>
       <div className="location">⌖ {r.location}</div>
       <div className="cardfoot">

@@ -90,7 +90,7 @@ export default function CreateReportForm({
             }
           />
         </label>
-        {!isNotice && <ReportPhotoPicker value={photo} onChange={onPhotoChange} onBusy={onPhotoBusy} />}
+        <ReportPhotoPicker value={photo} onChange={onPhotoChange} onBusy={onPhotoBusy} />
         <ConsentNote />
         <button disabled={disabled}>{busy ? "Publicando…" : "Publicar aviso"}</button>
       </form>

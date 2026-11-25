@@ -93,15 +93,11 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  function changeKind(kind: PublicationKind) {
+  function openCreate(kind: PublicationKind = "Aviso") {
+    setSelected(null);
     setPublicationKind(kind);
     setPhoto("");
     setPhotoBusy(false);
-  }
-
-  function openCreate(kind: PublicationKind = "Aviso") {
-    setSelected(null);
-    changeKind(kind);
     setNotice("");
     setCreate(true);
   }
@@ -169,7 +165,7 @@ export default function Home() {
         action,
         id: selected,
         ownerToken: legacyKey || undefined,
-        photo: action === "create" && publicationKind !== "Aviso" ? photo : undefined,
+        photo: action === "create" && photo ? photo : undefined,
       });
       if (action === "create") setCreate(false);
       form.reset();
@@ -210,7 +206,7 @@ export default function Home() {
           {create ? (
             <CreateReportForm
               kind={publicationKind}
-              onKindChange={changeKind}
+              onKindChange={setPublicationKind}
               photo={photo}
               onPhotoChange={setPhoto}
               onPhotoBusy={setPhotoBusy}

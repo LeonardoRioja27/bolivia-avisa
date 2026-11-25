@@ -38,8 +38,8 @@ export default function ReportDetail({
       </p>
       <p className="report-body">{report.body}</p>
       {report.imageUrl && (
-        <a href={report.imageUrl} target="_blank" rel="noreferrer" aria-label="Abrir foto del objeto en tamaño completo">
-          <img className="object-photo detail-photo" src={report.imageUrl} alt={"Foto del objeto: " + report.title} />
+        <a href={report.imageUrl} target="_blank" rel="noreferrer" aria-label="Abrir foto en tamaño completo">
+          <img className="object-photo detail-photo" src={report.imageUrl} alt={"Foto: " + report.title} />
         </a>
       )}
 
