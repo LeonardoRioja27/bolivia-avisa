@@ -11,6 +11,8 @@ import {clientNetwork} from "@/lib/proxy";
 import {classifyReport,fallbackCategory} from "@/lib/classify";
 export const dynamic="force-dynamic";
 const statuses=["Pendiente","En seguimiento","Resuelto"],categories=["Transporte","Servicios","Calles y espacios","Otros","Objetos perdidos","Objetos encontrados"];
+/** Resumen a partir de la descripción: primera línea, cortada en ~80 caracteres. */
+const summarize=(text:string)=>{const line=text.split("\n")[0].trim();if(line.length<=80)return line;const cut=line.slice(0,80),space=cut.lastIndexOf(" ");return (space>40?cut.slice(0,space):cut)+"…"};
 /** Nombre que se muestra cuando la persona no escribe un alias. */
 const ANONYMOUS="anónimo";
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{"Cache-Control":"no-store"}});
@@ -43,9 +45,14 @@ await env.DB!.prepare('DELETE FROM write_limits WHERE window < ?').bind(now-8640
 if(action==="hide"){const table=x.kind==="comment"?comments:reports;const target=await db.select().from(table).where(eq(table.id,id)).get();if(!target)return json({error:"Contenido no disponible"},404);if(!moderator&&!owns(target.ownerId))return json({error:"No tienes permiso para retirar este contenido."},403);await db.update(table).set({hidden:1}).where(eq(table.id,id));return json({ok:true})}
 if(action==="flag"){const reason=str(x.reason,500),kind=x.kind==="comment"?"comment":"report";if(!id||!reason)return json({error:"Explica el motivo de la denuncia."},400);const table=kind==="comment"?comments:reports;if(!await db.select().from(table).where(and(eq(table.id,id),eq(table.hidden,0))).get())return json({error:"Contenido no disponible"},404);await db.insert(flags).values({id:crypto.randomUUID(),targetId:id,kind,reason,userId:user?.userId??limiterId,created:now});return json({ok:true})}
 if(typeof x.author==="string"&&x.author.trim().length>50)return json({error:"El alias puede tener como máximo 50 caracteres."},400);
-if(!body)return json({error:"Añade un texto válido."},400);
-if(action==="create"){const title=str(x.title,120),location=str(x.location,100);
-if(!title||!location)return json({error:"Completa todos los campos."},400);
+if(typeof x.body==="string"&&x.body.trim().length>2500)return json({error:"La descripción puede tener como máximo 2500 caracteres."},400);
+// Un aviso nuevo puede no tener descripción si tiene resumen (ver create); comentarios y estados sí la necesitan.
+if(!body&&action!=="create")return json({error:"Añade un texto válido."},400);
+if(action==="create"){if(typeof x.title==="string"&&x.title.trim().length>120)return json({error:"El resumen puede tener como máximo 120 caracteres."},400);
+// Resumen y descripción son opcionales por separado: sin resumen, se saca de la descripción.
+const title=str(x.title,120)||summarize(body),location=str(x.location,100);
+if(!title)return json({error:"Escribe un resumen o una descripción."},400);
+if(!location)return json({error:"Indica el lugar."},400);
 // La categoría la decide Claude Haiku (lib/classify.ts); solo se acepta una enviada si es válida.
 const given=str(x.category,30),hint=["He perdido algo","He encontrado algo"].includes(str(x.hint,30))?str(x.hint,30):undefined;
 const category=categories.includes(given)?given:(await classifyReport({title,location,body,hint},(env as {ANTHROPIC_API_KEY?:string}).ANTHROPIC_API_KEY))??fallbackCategory(hint);let photo:Uint8Array|null;try{photo=decodePhoto(x.photo)}catch{return json({error:"La foto no es válida. Elige una imagen JPEG, PNG o WebP desde el formulario."},400)}if(photo&&!env.BUCKET)return json({error:"No se pueden guardar fotos en este momento. Inténtalo de nuevo más tarde."},503);const reportId=crypto.randomUUID(),imageKey=photo?'lost-found/'+reportId+'.jpg':null;if(photo&&imageKey)await env.BUCKET!.put(imageKey,photo,{httpMetadata:{contentType:'image/jpeg'}});try{await db.insert(reports).values({id:reportId,title,body,location,author,category,imageKey,status:"Pendiente",ownerId:ownerId!,created:now})}catch(error){if(imageKey)await env.BUCKET!.delete(imageKey).catch(()=>{});throw error}return remember(json({ok:true,id:reportId}));}

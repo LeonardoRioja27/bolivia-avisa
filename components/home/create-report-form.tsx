@@ -22,6 +22,22 @@ export default function CreateReportForm({
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const isNotice = kind === "Aviso";
+
+  // Título y descripción son opcionales por separado, pero hace falta al menos uno.
+  function requireOne(e: React.FormEvent<HTMLFormElement>) {
+    const form = e.currentTarget;
+    const title = form.elements.namedItem("title") as HTMLInputElement;
+    const body = form.elements.namedItem("body") as HTMLTextAreaElement;
+    if (!title.value.trim() && !body.value.trim()) {
+      e.preventDefault();
+      title.setCustomValidity("Escribe un resumen o una descripción (al menos uno).");
+      title.reportValidity();
+      return;
+    }
+    onSubmit(e);
+  }
+  const clearValidity = (e: React.FormEvent<HTMLFieldSetElement>) =>
+    (e.currentTarget.elements.namedItem("title") as HTMLInputElement).setCustomValidity("");
   return (
     <>
       <div className="eyebrow">TU COMUNIDAD TE ESCUCHA</div>
@@ -30,34 +46,33 @@ export default function CreateReportForm({
         Comparte hechos y evita datos personales. Clasificaremos tu aviso automáticamente. Este navegador recordará
         que el aviso es tuyo (con una cookie) para que puedas actualizarlo o retirarlo.
       </p>
-      <form onSubmit={onSubmit}>
+      <form onSubmit={requireOne}>
         <HoneypotField />
         <AuthorField />
-        <label>
-          {isNotice ? "¿Qué ocurre?" : "¿Qué objeto es?"}
+        <fieldset className="what" onInput={clearValidity}>
+          <legend>
+            {isNotice ? "¿Qué ocurre?" : "¿Qué objeto es?"} <span>Escribe un resumen, una descripción o ambos.</span>
+          </legend>
           <input
             name="title"
-            required
+            aria-label="Resumen"
             maxLength={120}
-            placeholder={isNotice ? "Ej.: Hay un problema con el tren 33" : "Ej.: Mochila azul perdida en el centro"}
+            placeholder={isNotice ? "Resumen. Ej.: Hay un problema con el tren 33" : "Resumen. Ej.: Mochila azul"}
           />
-        </label>
-        <label>
-          Lugar
-          <input name="location" required maxLength={100} placeholder="Ciudad, barrio o parada" />
-        </label>
-        <label>
-          Descripción
           <textarea
             name="body"
-            required
+            aria-label="Descripción"
             maxLength={2500}
             placeholder={
               isNotice
-                ? "Qué has observado y desde cuándo…"
-                : "Describe el objeto, cuándo y en qué zona se perdió o apareció."
+                ? "Descripción: qué has observado y desde cuándo…"
+                : "Descripción: cómo es el objeto, cuándo y en qué zona se perdió o apareció."
             }
           />
+        </fieldset>
+        <label>
+          Lugar
+          <input name="location" required maxLength={100} placeholder="Ciudad, barrio o parada" />
         </label>
         <ReportPhotoPicker value={photo} onChange={onPhotoChange} onBusy={onPhotoBusy} />
         <ConsentNote />

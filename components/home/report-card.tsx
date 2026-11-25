@@ -17,7 +17,8 @@ export default function ReportCard({
       </div>
       <h3>{r.title}</h3>
       {r.imageUrl && <img className="object-photo" src={r.imageUrl} alt={"Foto: " + r.title} loading="lazy" />}
-      <p>{r.body}</p>
+      {/* Sin descripción, o si el resumen ya es la descripción entera, no se repite. */}
+      {r.body && r.body !== r.title && <p>{r.body}</p>}
       <div className="location">⌖ {r.location}</div>
       <div className="cardfoot">
         <span>

@@ -36,7 +36,7 @@ export default function ReportDetail({
       <p className="meta">
         {report.location} · {report.category} · {report.author} · {formatDate(report.created)}
       </p>
-      <p className="report-body">{report.body}</p>
+      {report.body && report.body !== report.title && <p className="report-body">{report.body}</p>}
       {report.imageUrl && (
         <a href={report.imageUrl} target="_blank" rel="noreferrer" aria-label="Abrir foto en tamaño completo">
           <img className="object-photo detail-photo" src={report.imageUrl} alt={"Foto: " + report.title} />

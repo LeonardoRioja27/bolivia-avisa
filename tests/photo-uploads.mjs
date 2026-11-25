@@ -42,4 +42,11 @@ try{globalThis.fetch=async(url,init)=>{sent={url:String(url),body:JSON.parse(ini
 globalThis.fetch=async()=>ok('{"category":"Inventada"}');assert.equal(await classifyReport(report,'sk-test'),null);
 globalThis.fetch=async()=>reply(500,{type:'error',error:{type:'api_error',message:'boom'}});assert.equal(await classifyReport(report,'sk-test'),null);
 globalThis.fetch=async()=>{throw Error('should not call')};assert.equal(await classifyReport(report,undefined),null);checks+=9;}finally{globalThis.fetch=realFetch;console.error=quiet}}
-console.log('PASS: '+checks+' checks for photos, lost/found posts, size/type validation, cleanup, visibility, owner cookie, proof of work, single-use challenges, proxy IP, anonymous authors, AI classification, moderation and spam limits.');
+{const row=async v=>{r=await send({action:'create',location:'La Paz',category:'Otros',...v});const j=await r.json();return [r.status,j.id?sqlite.prepare('SELECT title,body FROM reports WHERE id=?').get(j.id):j]};
+let [st,rw]=await row({title:'Solo resumen',body:''});assert.equal(st,200);assert.equal(rw.title,'Solo resumen');assert.equal(rw.body,'');
+[st,rw]=await row({title:'',body:'Solo descripción corta'});assert.equal(st,200);assert.equal(rw.title,'Solo descripción corta');
+[st,rw]=await row({title:'',body:'Una descripción bastante larga que sigue y sigue para comprobar que el resumen se corta bien en una palabra\nsegunda línea'});assert.equal(st,200);assert.ok(rw.title.endsWith('…'));assert.ok(rw.title.length<=81);assert.ok(!rw.title.includes('segunda'));
+[st,rw]=await row({title:'',body:''});assert.equal(st,400);[st,rw]=await row({title:'  ',body:'  '});assert.equal(st,400);
+[st,rw]=await row({title:'x'.repeat(121),body:'ok'});assert.equal(st,400);
+r=await send({action:'comment',id:sqlite.prepare('SELECT id FROM reports LIMIT 1').get().id,body:''});assert.equal(r.status,400);checks+=12;}
+console.log('PASS: '+checks+' checks for photos, lost/found posts, size/type validation, cleanup, visibility, owner cookie, proof of work, single-use challenges, proxy IP, anonymous authors, AI classification, optional summary/description, moderation and spam limits.');
