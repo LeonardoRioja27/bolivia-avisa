@@ -166,6 +166,8 @@ export default function Home() {
         id: selected,
         ownerToken: legacyKey || undefined,
         photo: action === "create" && photo ? photo : undefined,
+        // Pista para la clasificación automática: qué botón abrió el formulario.
+        hint: action === "create" && publicationKind !== "Aviso" ? publicationKind : undefined,
       });
       if (action === "create") setCreate(false);
       form.reset();
@@ -206,7 +208,6 @@ export default function Home() {
           {create ? (
             <CreateReportForm
               kind={publicationKind}
-              onKindChange={setPublicationKind}
               photo={photo}
               onPhotoChange={setPhoto}
               onPhotoBusy={setPhotoBusy}

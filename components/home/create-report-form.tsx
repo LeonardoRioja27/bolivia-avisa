@@ -1,11 +1,10 @@
 "use client";
 import ReportPhotoPicker from "@/components/report-photo-picker";
 import { AuthorField, ConsentNote, HoneypotField } from "./form-fields";
-import { categories, type PublicationKind } from "./shared";
+import type { PublicationKind } from "./shared";
 
 export default function CreateReportForm({
   kind,
-  onKindChange,
   photo,
   onPhotoChange,
   onPhotoBusy,
@@ -13,8 +12,8 @@ export default function CreateReportForm({
   busy,
   onSubmit,
 }: {
+  /** Solo cambia los textos de ayuda; la categoría la decide Claude al publicar. */
   kind: PublicationKind;
-  onKindChange: (kind: PublicationKind) => void;
   photo: string;
   onPhotoChange: (photo: string) => void;
   onPhotoBusy: (busy: boolean) => void;
@@ -28,24 +27,12 @@ export default function CreateReportForm({
       <div className="eyebrow">TU COMUNIDAD TE ESCUCHA</div>
       <h2>{isNotice ? "Publicar un aviso" : kind}</h2>
       <p>
-        Comparte hechos y evita datos personales. Este navegador recordará que el aviso es tuyo (con una cookie) para
-        que puedas actualizarlo o retirarlo.
+        Comparte hechos y evita datos personales. Clasificaremos tu aviso automáticamente. Este navegador recordará
+        que el aviso es tuyo (con una cookie) para que puedas actualizarlo o retirarlo.
       </p>
       <form onSubmit={onSubmit}>
         <HoneypotField />
         <AuthorField />
-        <label>
-          Tipo de publicación
-          <select
-            aria-label="Tipo de publicación"
-            value={kind}
-            onChange={(e) => onKindChange(e.target.value as PublicationKind)}
-          >
-            <option>Aviso</option>
-            <option>He perdido algo</option>
-            <option>He encontrado algo</option>
-          </select>
-        </label>
         <label>
           {isNotice ? "¿Qué ocurre?" : "¿Qué objeto es?"}
           <input
@@ -55,28 +42,10 @@ export default function CreateReportForm({
             placeholder={isNotice ? "Ej.: Hay un problema con el tren 33" : "Ej.: Mochila azul perdida en el centro"}
           />
         </label>
-        <div className="formrow">
-          <label>
-            Lugar
-            <input name="location" required maxLength={100} placeholder="Ciudad, barrio o parada" />
-          </label>
-          {isNotice ? (
-            <label>
-              Categoría
-              <select name="category">
-                {categories.slice(0, 4).map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <input
-              type="hidden"
-              name="category"
-              value={kind === "He perdido algo" ? "Objetos perdidos" : "Objetos encontrados"}
-            />
-          )}
-        </div>
+        <label>
+          Lugar
+          <input name="location" required maxLength={100} placeholder="Ciudad, barrio o parada" />
+        </label>
         <label>
           Descripción
           <textarea
