@@ -1,0 +1,18 @@
+// Worker que sirve Bolivia Avisa desde tu dominio de Cloudflare.
+// Instrucciones: proxy/README.md
+{
+  "name": "bolivia-avisa-proxy",
+  "main": "worker.ts",
+  "compatibility_date": "2026-05-01",
+  "vars": {
+    // Cámbialo por la dirección de tu web en ChatGPT Sites (sin barra final).
+    "SITES_ORIGIN": "https://CAMBIA-ESTO.example"
+  },
+  // PROXY_SECRET no va aquí: se guarda como secreto con
+  //   npx wrangler secret put PROXY_SECRET --config proxy/wrangler.jsonc
+  "routes": [
+    // Quita las // y pon tu dominio. "/*" sirve toda la web desde tu dominio;
+    // usa "/api/*" si las páginas las sirves tú por otro lado.
+    // { "pattern": "tu-dominio.com/*", "zone_name": "tu-dominio.com" }
+  ]
+}

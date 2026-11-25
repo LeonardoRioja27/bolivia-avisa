@@ -7,6 +7,7 @@ import {challenge,validChallenge,guestOwner,signed,RATE_SQL} from "@/lib/public-
 import {decodePhoto,readReportBody} from "@/lib/report-photo";
 import {newOwnerToken,ownerCookie,readOwnerToken} from "@/lib/owner-cookie";
 import {POW_BITS,powPayload,validPow} from "@/lib/pow";
+import {clientNetwork} from "@/lib/proxy";
 export const dynamic="force-dynamic";
 const statuses=["Pendiente","En seguimiento","Resuelto"],categories=["Transporte","Servicios","Calles y espacios","Otros","Objetos perdidos","Objetos encontrados"];
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{"Cache-Control":"no-store"}});
@@ -31,7 +32,7 @@ if(!await env.DB!.prepare('INSERT INTO used_challenges(nonce,expires) VALUES (?,
 // La cookie identifica al autor; ownerToken solo llega de claves antiguas guardadas en localStorage.
 const creating=["create","comment"].includes(action),cookieToken=readOwnerToken(req),freshToken=!cookieToken&&creating?newOwnerToken():null;const cookieGuest=await guestOwner(cookieToken??freshToken),legacyGuest=await guestOwner(x.ownerToken),ownerId=cookieGuest??legacyGuest??user?.userId;const owns=(id:string|null)=>!!id&&(id===user?.userId||id===cookieGuest||id===legacyGuest);const remember=(res:Response)=>{if(freshToken)res.headers.append("Set-Cookie",ownerCookie(freshToken,req));return res};
 if(creating&&!ownerId)return json({error:"No se ha podido preparar la clave de tu publicación. Recarga la página."},400);
-const network=req.headers.get("cf-connecting-ip")||"shared";
+const network=await clientNetwork(req,(env as {PROXY_SECRET?:string}).PROXY_SECRET);
 const limiterId="network:"+await signed(new Date().toISOString().slice(0,10)+":"+network,secret);
 const now=Date.now();
 for(const [bucket,max] of [[limiterId,10],["global-public",100]] as const){const limited=await env.DB!.prepare(RATE_SQL).bind(bucket,now,now-600000,now-600000,now-600000,max).first();if(!limited)return json({error:"Se ha alcanzado el límite temporal de participación. Espera unos minutos."},429);}
