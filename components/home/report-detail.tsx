@@ -34,7 +34,7 @@ export default function ReportDetail({
       <span className={statusClass}>{report.status}</span>
       <h2>{report.title}</h2>
       <p className="meta">
-        {report.location} · {report.category} · {report.author} · {formatDate(report.created)}
+        {[report.location, report.category, report.author, formatDate(report.created)].filter(Boolean).join(" · ")}
       </p>
       {report.body && report.body !== report.title && <p className="report-body">{report.body}</p>}
       {report.imageUrl && (

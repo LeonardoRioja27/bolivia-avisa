@@ -26,9 +26,9 @@ export default function Hero({ onPublish }: { onPublish: () => void }) {
         <div className="orbit o2" />
         <div className="bubble small">¿Alguien tiene novedades?</div>
         <div className="sample">
-          <span className="sample-tag">EJEMPLO · TRANSPORTE</span>
-          <strong>Problema con el tren 33</strong>
-          <p>Compartamos lo que sabemos.</p>
+          <span className="sample-tag">EJEMPLO · POLICÍA</span>
+          <strong>Persona perdida</strong>
+          <p>Mandado a la policía automáticamente.</p>
           <div className="sample-bottom">
             <span className="avatars">
               A <i>B</i> <i>C</i>

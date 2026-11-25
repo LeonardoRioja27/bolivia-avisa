@@ -3,6 +3,9 @@ import ReportPhotoPicker from "@/components/report-photo-picker";
 import { AuthorField, ConsentNote, HoneypotField } from "./form-fields";
 import type { PublicationKind } from "./shared";
 
+/** Igual que el límite del servidor (app/api/reports/route.ts). */
+const TITLE_MAX = 120;
+
 export default function CreateReportForm({
   kind,
   photo,
@@ -51,13 +54,13 @@ export default function CreateReportForm({
         <AuthorField />
         <fieldset className="what" onInput={clearValidity}>
           <legend>
-            {isNotice ? "¿Qué ocurre?" : "¿Qué objeto es?"} <span>Escribe un resumen, una descripción o ambos.</span>
+            {isNotice ? "¿Qué ocurre?" : "¿Qué objeto es?"} <span>Al menos uno.</span>
           </legend>
           <input
             name="title"
             aria-label="Resumen"
-            maxLength={120}
-            placeholder={isNotice ? "Resumen. Ej.: Hay un problema con el tren 33" : "Resumen. Ej.: Mochila azul"}
+            maxLength={TITLE_MAX}
+            placeholder={`Resumen. Máximo ${TITLE_MAX} caracteres`}
           />
           <textarea
             name="body"
@@ -65,14 +68,18 @@ export default function CreateReportForm({
             maxLength={2500}
             placeholder={
               isNotice
-                ? "Descripción: qué has observado y desde cuándo…"
+                ? "Qué has observado y desde cuándo. La IA te entiende y manda tu queja a la entidad correspondiente."
                 : "Descripción: cómo es el objeto, cuándo y en qué zona se perdió o apareció."
             }
           />
         </fieldset>
         <label>
           Lugar
-          <input name="location" required maxLength={100} placeholder="Ciudad, barrio o parada" />
+          <input
+            name="location"
+            maxLength={100}
+            placeholder="Ciudad, barrio o parada. Si lo dejas vacío, la IA te entiende automáticamente."
+          />
         </label>
         <ReportPhotoPicker value={photo} onChange={onPhotoChange} onBusy={onPhotoBusy} />
         <ConsentNote />
