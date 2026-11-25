@@ -8,6 +8,16 @@ export function HoneypotField() {
   );
 }
 
+/** Nombre o alias opcional: si se deja vacío, se publica como «anónimo». */
+export function AuthorField() {
+  return (
+    <label>
+      Tu nombre o alias (opcional)
+      <input name="author" maxLength={50} placeholder="Si lo dejas vacío, aparecerás como anónimo" />
+    </label>
+  );
+}
+
 /** Aviso (sin casilla) de que publicar implica aceptar las normas. */
 export function ConsentNote() {
   return (

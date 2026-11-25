@@ -1,6 +1,6 @@
 "use client";
 import ReportPhotoPicker from "@/components/report-photo-picker";
-import { ConsentNote, HoneypotField } from "./form-fields";
+import { AuthorField, ConsentNote, HoneypotField } from "./form-fields";
 import { categories, type PublicationKind } from "./shared";
 
 export default function CreateReportForm({
@@ -33,10 +33,7 @@ export default function CreateReportForm({
       </p>
       <form onSubmit={onSubmit}>
         <HoneypotField />
-        <label>
-          Tu nombre o alias
-          <input name="author" required maxLength={50} placeholder="Cómo quieres aparecer" />
-        </label>
+        <AuthorField />
         <label>
           Tipo de publicación
           <select

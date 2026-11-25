@@ -1,5 +1,5 @@
 "use client";
-import { ConsentNote, HoneypotField } from "./form-fields";
+import { AuthorField, ConsentNote, HoneypotField } from "./form-fields";
 import {
   formatDate,
   readKey,
@@ -65,10 +65,7 @@ export default function ReportDetail({
 
       <form onSubmit={(e) => onSubmit(e, "comment")}>
         <HoneypotField />
-        <label>
-          Tu nombre o alias
-          <input name="author" required maxLength={50} />
-        </label>
+        <AuthorField />
         <label>
           Añadir un comentario
           <textarea name="body" required maxLength={2500} placeholder="Comparte lo que sabes…" />
@@ -82,10 +79,7 @@ export default function ReportDetail({
           <summary>Actualizar el estado</summary>
           <form onSubmit={(e) => onSubmit(e, "status")}>
             <HoneypotField />
-            <label>
-              Tu nombre o alias
-              <input name="author" required maxLength={50} />
-            </label>
+            <AuthorField />
             <label>
               Nuevo estado
               <select name="status" defaultValue={report.status}>
